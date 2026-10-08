@@ -1,6 +1,6 @@
 # AWS Secure Cloud Architecture
 
-A cloud security architecture project built on Amazon Web Services to redesign a vulnerable on-premises environment following a ransomware incident.
+A cloud security architecture project built on Amazon Web Services to redesign a vulnerable environment following a ransomware incident.
 
 The solution focused on network segmentation, controlled administrative access, private application and database tiers, resilience, scaling, and reducing lateral movement through layered AWS security controls.
 
@@ -10,9 +10,9 @@ The solution focused on network segmentation, controlled administrative access, 
 
 The project was based around a fictional company scenario called **WinLocal Giveaways**.
 
-The company had suffered a ransomware attack that exposed weaknesses in its flat on-premises network. The goal was to design and implement a proof-of-concept AWS architecture that improved security, resilience, availability, and scalability.
+The company had suffered a ransomware attack that exposed weaknesses in its flat network. The goal was to design and implement a proof-of-concept AWS environment that improved security, resilience, availability, and scalability.
 
-The environment was designed around:
+The environment included:
 
 - One AWS VPC
 - Two Availability Zones
@@ -24,105 +24,80 @@ The environment was designed around:
 - Bastion host
 - Amazon RDS MySQL
 - Auto Scaling
-- S3 failover page
 - Layered security groups
 
 ## Architecture
 
-The VPC used a segmented architecture across two Availability Zones.
+The VPC used segmented public, application, and database tiers across multiple Availability Zones.
 
-Public subnets contained internet-facing services such as the Application Load Balancer and bastion host.
+Public-facing resources handled incoming and administrative traffic, while the web and database systems were kept inside private subnets.
 
-Private application subnets contained EC2 web servers with no direct public exposure.
-
-Private database subnets contained Amazon RDS, isolated from direct internet access.
-
-This design reduced the risk of lateral movement compared with the original flat network.
-
-![AWS VPC resource map](screenshots/vpc-resource-map.png)
+![AWS VPC Resource Map](Screenshots/vpc-resource-map.png)
 
 ## Bastion Host
 
 Administrative access to private EC2 instances was routed through a bastion host located in the public subnet.
 
-The bastion security group only allowed SSH access from authorised administrative addresses, creating a controlled entry point into the private network.
+The bastion security group restricted SSH access to authorised administrative addresses only.
 
-![Bastion security group rules](screenshots/bastion-security-group.png)
+![Bastion Security Group](Screenshots/bastion-security-group.png)
 
-SSH access to the private web server was performed through the bastion host rather than exposing the private instance directly to the internet.
+Private web servers were accessed through the bastion rather than being directly exposed to the internet.
 
-![SSH through bastion to private web server](screenshots/ssh-through-bastion.png)
+![SSH Through Bastion](Screenshots/ssh-through-bastion.png)
 
-## Private Web Server
+## Private Web Tier
 
-The web server ran on Amazon Linux 2023 inside a private application subnet.
+The web server was placed inside a private application subnet with no direct public IP address.
 
-It had no public IP address and received user traffic through the Application Load Balancer.
-
-This reduced direct exposure while still allowing the application to remain externally accessible.
+User traffic reached the application through the Application Load Balancer, reducing direct exposure of the EC2 instance.
 
 ## Amazon RDS
 
-Amazon RDS MySQL was used to store application data.
-
-The database was placed inside the private database tier with public accessibility disabled.
+Amazon RDS MySQL was deployed inside the private database tier with public access disabled.
 
 Only the web server security group was permitted to connect to the database on MySQL port 3306.
 
-![RDS private connectivity](screenshots/rds-private-connectivity.png)
+![RDS Private Connectivity](Screenshots/rds-private-connectivity.png)
 
 ## Application Load Balancer
 
-An Application Load Balancer was deployed across the public-facing layer.
+An Application Load Balancer was used as the public entry point for application traffic.
 
-It distributed incoming requests across healthy application servers and provided a more resilient replacement for the company's unreliable existing load balancer.
+It distributed incoming requests to healthy web server instances and improved resilience compared with the original environment.
 
-![Application Load Balancer](screenshots/alb-active.png)
+![Application Load Balancer](Screenshots/alb-active.png)
 
 ## Auto Scaling
 
-An Auto Scaling Group was configured to maintain one web server under normal conditions and scale to a second instance when CPU utilisation crossed the configured threshold.
+An Auto Scaling Group was configured to maintain one web server under normal conditions and scale to an additional instance when demand increased.
 
-The group used private application subnets across both Availability Zones.
+This provided improved availability and helped the environment respond automatically to traffic spikes.
 
-![Auto Scaling Group](screenshots/auto-scaling-group.png)
+![Auto Scaling Group](Screenshots/auto-scaling-group.png)
 
-## Security Group Chain
+## Security Group Design
 
-The architecture used separate security groups for each layer.
+Separate security groups were used to control communication between each tier.
 
-### SG-ALB
-Attached to the Application Load Balancer and allowed HTTP traffic from external users.
+### Web Security Group
 
-### SG-Bastion
-Attached to the bastion host and allowed SSH access only from authorised administrator IP addresses.
+The private web server security group accepted:
 
-### SG-Web
-Attached to the private web servers.
-
-It allowed:
-
-- HTTP traffic from the ALB
+- HTTP traffic from the Application Load Balancer
 - SSH traffic from the bastion host
 
-No direct internet access was permitted.
+It was not directly exposed to the internet.
 
-![Web server security group](screenshots/sg-web.png)
+![Web Security Group](Screenshots/sg-web.png)
 
-### SG-RDS
-Attached to the RDS database.
+### RDS Security Group
 
-It allowed MySQL traffic on port 3306 only from the web server security group.
+The database security group permitted MySQL traffic on port 3306 only from the web server security group.
 
-![RDS security group](screenshots/sg-rds.png)
+This kept the database isolated from direct user or internet access.
 
-This security-group chain limited communication between tiers and reduced the potential for lateral movement.
-
-## S3 Failover Page
-
-A static maintenance page was hosted using Amazon S3 to provide users with a fallback page if the main application became unavailable.
-
-This provided a lightweight and low-cost recovery option without requiring another EC2 instance.
+![RDS Security Group](Screenshots/sg-rds.png)
 
 ## Security Concepts Demonstrated
 
@@ -132,80 +107,46 @@ This provided a lightweight and low-cost recovery option without requiring anoth
 - Bastion-host architecture
 - Private application tiers
 - Private database tiers
-- Controlled east-west traffic
+- Security group chaining
 - Reduced attack surface
-- Security-group chaining
-- Resilience across Availability Zones
+- Controlled lateral movement
 - Load balancing
-- Automatic scaling
-- Backup/failover design
+- Auto Scaling
+- Multi-AZ design principles
+- Cloud resilience
 
 ## Challenges Addressed
 
-The architecture was designed to address several issues from the original environment:
+The architecture was designed to address several weaknesses in the original environment:
 
-- unreliable load balancing
-- database storage failures
-- traffic spikes
-- lack of resilience
-- ransomware propagation through a flat network
-- excessive direct exposure between systems
-
-The redesign used segmentation, controlled communication between tiers, managed database services, and automated scaling to reduce those risks.
+- Flat network architecture
+- Ransomware propagation
+- Direct system exposure
+- Unreliable load balancing
+- Database availability issues
+- Traffic spikes
+- Lack of automated scaling
+- Limited separation between application and database systems
 
 ## Production Improvements
 
-Some services were identified as future production improvements rather than part of the proof of concept.
-
-These included:
+Additional services identified for a production version included:
 
 - AWS WAF
 - Amazon CloudWatch
 - Route 53 DNS failover
-- second NAT Gateway
 - Multi-AZ RDS standby
-
-## Sustainability Considerations
-
-The design also considered cost and resource efficiency.
-
-Examples included:
-
-- using appropriately sized EC2 and RDS instances
-- scaling capacity only when needed
-- using S3 static hosting for the failover page instead of another server
-
-## Technologies Used
-
-- Amazon Web Services
-- Amazon VPC
-- Amazon EC2
-- Amazon RDS MySQL
-- Application Load Balancer
-- Auto Scaling
-- Amazon S3
-- Security Groups
-- Bastion Host
-- NAT Gateway
-- Internet Gateway
-- Route Tables
-- Amazon Linux 2023
-
-## Project Documentation
-
-The full project report is available in the `Docs` directory.
-
-Additional screenshots of the AWS architecture and security controls are available in the `screenshots` directory.
+- Additional NAT resilience
 
 ## What I Learned
 
 This project provided hands-on experience with:
 
-- designing segmented AWS networks
-- implementing public and private subnet architectures
-- reducing lateral movement through security groups
-- securing administrative access with a bastion host
-- isolating databases from public access
-- configuring load balancing
-- using Auto Scaling for resilience and demand handling
-- designing cloud environments around security and availability requirements
+- Designing segmented AWS environments
+- Building public and private subnet architectures
+- Restricting traffic with security groups
+- Securing administrative access through a bastion host
+- Isolating databases from public access
+- Configuring Application Load Balancing
+- Using Auto Scaling for availability and demand handling
+- Designing cloud systems around security and resilience requirementsaround security and availability requirements
