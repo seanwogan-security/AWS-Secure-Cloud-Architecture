@@ -26,6 +26,20 @@ The environment included:
 - Auto Scaling
 - Layered security groups
 
+## My Contribution
+
+I built an AWS proof of concept with separate public, application and
+database tiers. I configured private subnets for EC2 and RDS, security
+groups to control traffic between tiers, an Application Load Balancer
+for web traffic, and a bastion host for administrative access. I also
+configured an Auto Scaling group for the web tier.
+
+## Validation
+
+The project screenshots show SSH access to a private EC2 instance through
+the bastion host and private connectivity to RDS. They also document the
+load balancer and Auto Scaling group configuration.
+
 ## Architecture
 
 The VPC used segmented public, application, and database tiers across multiple Availability Zones.
@@ -130,13 +144,9 @@ The architecture was designed to address several weaknesses in the original envi
 
 ## Production Improvements
 
-Additional services identified for a production version included:
-
-- AWS WAF
-- Amazon CloudWatch
-- Route 53 DNS failover
-- Multi-AZ RDS standby
-- Additional NAT resilience
+I identified AWS WAF, CloudWatch monitoring, Route 53 DNS failover,
+a Multi-AZ RDS standby and additional NAT resilience as improvements
+for a production deployment.
 
 ## What I Learned
 
