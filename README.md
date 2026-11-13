@@ -159,4 +159,4 @@ This project provided hands-on experience with:
 - Isolating databases from public access
 - Configuring Application Load Balancing
 - Using Auto Scaling for availability and demand handling
-- Designing cloud systems around security and resilience requirementsaround security and availability requirements
+- Designing cloud infrastructure around security and availability requirements
